@@ -622,6 +622,22 @@ public class MTMathAtomFactory {
 			case _ where supportedAccentedCharacters.keys.contains(ch):
 				// support for áéíóúýàèìòùâêîôûäëïöüÿãñõçøåæœß'ÁÉÍÓÚÝÀÈÌÒÙÂÊÎÔÛÄËÏÖÜÃÑÕÇØÅÆŒ
 				return atom(fromAccentedCharacter: ch)
+            case "×", "÷", "±", "\u{2212}", "⊕", "⊙":
+                return MTMathAtom(type: .binaryOperator, value: chStr)
+            case "→", "≒", "≡", "≣", "≦", "≧", "⇋", "≠", "≈", "＝", "﹥", "＜", "＞":
+                return MTMathAtom(type: .relation, value: chStr)
+            case _ where isExtendedCJK(ch):
+                // CJK ideographs, punctuation and fullwidth forms. Rendered as
+                // ordinary text; glyphs come from the CoreText font cascade
+                // (same mechanism as the Cyrillic support above).
+                return MTMathAtom(type: .ordinary, value: chStr)
+            case "°", "℃", "℉", "′", "‧", "…", "∞", "∠", "●", "△",
+                 "–", "—", "\u{2018}"..."\u{201D}":
+                return MTMathAtom(type: .ordinary, value: chStr)
+            case "\u{0391}"..."\u{03A9}", "\u{03B1}"..."\u{03C9}":
+                // Bare Greek letters; .variable so they pick up the same
+                // math-italic style as \theta, \mu etc.
+                return MTMathAtom(type: .variable, value: chStr)
             case _ where ch.utf32Char < 0x0021 || ch.utf32Char > 0x007E:
                 return nil
             case "$", "%", "#", "&", "~", "\'", "^", "_", "{", "}", "\\":
@@ -653,6 +669,24 @@ public class MTMathAtomFactory {
         }
     }
     
+    /** True for CJK ideographs, CJK punctuation, fullwidth forms and related
+     compatibility blocks. These have no glyphs in the bundled math fonts and
+     rely on the CoreText font cascade at render time. */
+    static func isExtendedCJK(_ ch: Character) -> Bool {
+        switch ch.utf32Char {
+            case 0x3000...0x303F,   // CJK symbols & punctuation 、。「」
+                 0x3300...0x33FF,   // CJK compatibility units ㎝ ㎏ ㎜ ㎎
+                 0x3400...0x4DBF,   // CJK extension A
+                 0x4E00...0x9FFF,   // CJK unified ideographs
+                 0xF900...0xFAFF,   // CJK compatibility ideographs
+                 0xFE30...0xFE6F,   // small form variants ﹐ ﹖ ﹥
+                 0xFF00...0xFFEF:   // halfwidth & fullwidth forms （ ） ， ？ ％
+                return true
+            default:
+                return false
+        }
+    }
+
     /** Returns a `MTMathList` with one atom per character in the given string. This function
      does not do any LaTeX conversion or interpretation. It simply uses `atom(forCharacter:)` to
      convert the characters to atoms. Any character that cannot be converted is ignored. */
