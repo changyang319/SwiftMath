@@ -343,6 +343,29 @@ final class MTMathListBuilderTests: XCTestCase {
         XCTAssertEqual(atom.nucleus, "2", desc)
     }
 
+    func testHarpoons() throws {
+        let cases: [(String, String)] = [
+            ("\\leftharpoonup", "\u{21BC}"),
+            ("\\leftharpoondown", "\u{21BD}"),
+            ("\\rightharpoonup", "\u{21C0}"),
+            ("\\rightharpoondown", "\u{21C1}"),
+            ("\\leftrightharpoons", "\u{21CB}"),
+            ("\\rightleftharpoons", "\u{21CC}"),
+        ]
+        for (str, expected) in cases {
+            let desc = "Error for string:\(str)"
+            let list = MTMathListBuilder.build(fromString: str)
+            XCTAssertNotNil(list, desc)
+            XCTAssertEqual(list!.atoms.count, 1, desc)
+            let atom = list!.atoms[0]
+            XCTAssertEqual(atom.type, .relation, desc)
+            XCTAssertEqual(atom.nucleus, expected, desc)
+        }
+        // A formula mixing a harpoon with other atoms must not fail to parse.
+        let mixed = MTMathListBuilder.build(fromString: "H_2 + I_2 \\rightleftharpoons 2HI")
+        XCTAssertNotNil(mixed, "rightleftharpoons must not nil out the whole formula")
+    }
+
     func testFrac() throws {
         let str = "\\frac1c";
         let list = MTMathListBuilder.build(fromString: str)!

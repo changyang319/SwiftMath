@@ -225,6 +225,14 @@ public class MTMathAtomFactory {
         "Longrightarrow" : MTMathAtom(type: .relation, value: "\u{27F9}"),
         "Longleftrightarrow" : MTMathAtom(type: .relation, value: "\u{27FA}"),
 
+        // Harpoons (amssymb relations)
+        "leftharpoonup" : MTMathAtom(type: .relation, value: "\u{21BC}"),
+        "leftharpoondown" : MTMathAtom(type: .relation, value: "\u{21BD}"),
+        "rightharpoonup" : MTMathAtom(type: .relation, value: "\u{21C0}"),
+        "rightharpoondown" : MTMathAtom(type: .relation, value: "\u{21C1}"),
+        "leftrightharpoons" : MTMathAtom(type: .relation, value: "\u{21CB}"),
+        "rightleftharpoons" : MTMathAtom(type: .relation, value: "\u{21CC}"),
+
 
         // Relations
         "leq" : MTMathAtom(type: .relation, value: UnicodeSymbol.lessEqual),
