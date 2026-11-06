@@ -594,6 +594,21 @@ class MTTypesetter {
                         self.makeScripts(atom, display:display, index:UInt(frac!.indexRange.location), delta:0)
                     }
                     
+                case .largeOperator where atom is MTExtensibleArrow:
+                    // stash the existing layout
+                    if currentLine.length > 0 {
+                        self.addDisplayLine()
+                    }
+                    // An extensible arrow is spaced like \rightarrow, i.e. as a relation.
+                    self.addInterElementSpace(prevNode, currentType:.relation)
+                    atom.type = .relation
+                    let display = self.makeExtensibleArrow(atom as! MTExtensibleArrow)
+                    displayAtoms.append(display)
+                    // add super scripts || subscripts
+                    if atom.subScript != nil || atom.superScript != nil {
+                        self.makeScripts(atom, display:display, index:UInt(atom.indexRange.location), delta:0)
+                    }
+
                 case .largeOperator:
                     // stash the existing layout
                     if currentLine.length > 0 {
@@ -1352,6 +1367,42 @@ class MTTypesetter {
         }
     }
     
+    // MARK: - Extensible arrows
+
+    /// Lays out `\xrightarrow` / `\xleftarrow`: the labels are set in script style above and
+    /// below the arrow (in every style, unlike large-operator limits), and the arrow is
+    /// stretched so that it overhangs the wider label on both sides.
+    func makeExtensibleArrow(_ arrow:MTExtensibleArrow) -> MTDisplay {
+        let mathTable = styleFont.mathTable!
+        var upper:MTMathListDisplay? = nil, lower:MTMathListDisplay? = nil
+        if let list = arrow.upperLabel, !list.atoms.isEmpty {
+            upper = MTTypesetter.createLineForMathList(list, font:font, style:self.scriptStyle(), cramped:self.superScriptCramped())
+        }
+        if let list = arrow.lowerLabel, !list.atoms.isEmpty {
+            lower = MTTypesetter.createLineForMathList(list, font:font, style:self.scriptStyle(), cramped:self.subscriptCramped())
+        }
+        let em = styleFont.fontSize
+        let labelWidth = max(upper?.width ?? 0, lower?.width ?? 0)
+        // At least as long as a plain \rightarrow, with some overhang past the labels.
+        let arrowWidth = max(labelWidth + 0.6 * em, em)
+        let arrowDisplay = MTExtensibleArrowDisplay(width:arrowWidth, leftward:arrow.leftward,
+                                                    axisHeight:mathTable.axisHeight,
+                                                    thickness:mathTable.fractionRuleThickness,
+                                                    headLength:0.28 * em, headHalfHeight:0.17 * em,
+                                                    range:arrow.indexRange)
+        let display = MTLargeOpLimitsDisplay(withNucleus:arrowDisplay, upperLimit:upper, lowerLimit:lower, limitShift:0, extraPadding:0)
+        if upper != nil {
+            display.upperLimitGap = mathTable.upperLimitGapMin
+        }
+        if lower != nil {
+            display.lowerLimitGap = mathTable.lowerLimitGapMin
+        }
+        display.position = currentPosition
+        display.range = arrow.indexRange
+        currentPosition.x += display.width
+        return display
+    }
+
     // MARK: - Large delimiters
     
     // Delimiter shortfall from plain.tex

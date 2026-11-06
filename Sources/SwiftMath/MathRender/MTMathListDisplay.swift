@@ -710,6 +710,62 @@ class MTLargeOpLimitsDisplay : MTDisplay {
     
 }
 
+// MARK: - MTExtensibleArrowDisplay
+
+/// A horizontal arrow of arbitrary width, centred on the math axis. Used as the nucleus of
+/// `\xrightarrow` / `\xleftarrow`; it is drawn as a path because the bundled math fonts
+/// offer no horizontal glyph assembly that SwiftMath can stretch.
+class MTExtensibleArrowDisplay : MTDisplay {
+
+    let leftward:Bool
+    let axisHeight:CGFloat
+    let thickness:CGFloat
+    let headLength:CGFloat
+    let headHalfHeight:CGFloat
+
+    init(width:CGFloat, leftward:Bool, axisHeight:CGFloat, thickness:CGFloat,
+         headLength:CGFloat, headHalfHeight:CGFloat, range:NSRange) {
+        self.leftward = leftward
+        self.axisHeight = axisHeight
+        self.thickness = thickness
+        self.headLength = headLength
+        self.headHalfHeight = headHalfHeight
+        super.init()
+        self.width = width
+        self.range = range
+        let reach = headHalfHeight + thickness / 2
+        self.ascent = axisHeight + reach
+        self.descent = max(0, reach - axisHeight)
+    }
+
+    override func draw(_ context:CGContext) {
+        super.draw(context)
+        context.saveGState()
+        context.setStrokeColor((self.textColor ?? MTColor.black).cgColor)
+        context.setLineWidth(self.thickness)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+
+        let y = self.position.y + self.axisHeight
+        let inset = self.thickness / 2
+        let left = self.position.x + inset
+        let right = self.position.x + self.width - inset
+        let tip = leftward ? left : right
+        let back = leftward ? tip + headLength : tip - headLength
+
+        // shaft
+        context.move(to: CGPoint(x: left, y: y))
+        context.addLine(to: CGPoint(x: right, y: y))
+        // head
+        context.move(to: CGPoint(x: back, y: y + headHalfHeight))
+        context.addLine(to: CGPoint(x: tip, y: y))
+        context.addLine(to: CGPoint(x: back, y: y - headHalfHeight))
+        context.strokePath()
+
+        context.restoreGState()
+    }
+}
+
 // MARK: - MTLineDisplay
 
 /// Rendering of an list with an overline or underline

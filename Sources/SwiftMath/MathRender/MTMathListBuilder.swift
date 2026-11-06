@@ -444,6 +444,12 @@ public struct MTMathListBuilder {
                     if let accent = atom as? MTAccent {
                         str += "\\\(MTMathAtomFactory.accentName(accent)!){\(mathListToString(accent.innerList!))}"
                     }
+                } else if let arrow = atom as? MTExtensibleArrow {
+                    str += arrow.leftward ? "\\xleftarrow" : "\\xrightarrow"
+                    if let lower = arrow.lowerLabel, !lower.atoms.isEmpty {
+                        str += "[\(mathListToString(lower))]"
+                    }
+                    str += "{\(mathListToString(arrow.upperLabel))}"
                 } else if atom.type == .largeOperator {
                     let op = atom as! MTLargeOperator
                     let command = MTMathAtomFactory.latexSymbolName(for: atom)
@@ -573,6 +579,18 @@ public struct MTMathListBuilder {
             let newInner = currentInnerAtom;
             currentInnerAtom = oldInner;
             return newInner;
+        } else if command == "xrightarrow" || command == "xleftarrow" {
+            // \xrightarrow[below]{above}: an optional label below, a mandatory label above
+            let arrow = MTExtensibleArrow(leftward: command == "xleftarrow")
+            if self.hasCharacters {
+                if self.getNextCharacter() == "[" {
+                    arrow.lowerLabel = self.buildInternal(false, stopChar:"]")
+                } else {
+                    self.unlookCharacter()
+                }
+            }
+            arrow.upperLabel = self.buildInternal(true)
+            return arrow
         } else if command == "overline" {
             // The overline command has 1 arguments
             let over = MTOverLine()

@@ -218,6 +218,9 @@ public class MTMathAtom: NSObject {
     public func copy() -> MTMathAtom {
         switch self.type {
             case .largeOperator:
+                if let arrow = self as? MTExtensibleArrow {
+                    return MTExtensibleArrow(arrow)
+                }
                 return MTLargeOperator(self as? MTLargeOperator)
             case .fraction:
                 return MTFraction(self as? MTFraction)
@@ -442,6 +445,40 @@ public class MTLargeOperator: MTMathAtom {
     init(value: String, limits: Bool) {
         super.init(type: .largeOperator, value: value)
         self.limits = limits
+    }
+}
+
+// MARK: - MTExtensibleArrow
+/** An extensible arrow (`\xrightarrow[below]{above}` / `\xleftarrow[below]{above}`).
+ The arrow stretches to fit the labels drawn above and below it, in every style
+ (not only display style), and is spaced as a relation. The labels are kept apart from
+ `superScript`/`subScript` so that ordinary scripts can still be attached to the arrow. */
+public class MTExtensibleArrow: MTLargeOperator {
+
+    /// `true` for `\xleftarrow`, `false` for `\xrightarrow`.
+    public var leftward: Bool = false
+    /// The label drawn above the arrow (the mandatory `{...}` argument).
+    public var upperLabel: MTMathList?
+    /// The label drawn below the arrow (the optional `[...]` argument).
+    public var lowerLabel: MTMathList?
+
+    override public var finalized: MTMathAtom {
+        let newArrow = super.finalized as! MTExtensibleArrow
+        newArrow.upperLabel = newArrow.upperLabel?.finalized
+        newArrow.lowerLabel = newArrow.lowerLabel?.finalized
+        return newArrow
+    }
+
+    init(_ arrow: MTExtensibleArrow?) {
+        super.init(arrow)
+        self.leftward = arrow?.leftward ?? false
+        self.upperLabel = MTMathList(arrow?.upperLabel)
+        self.lowerLabel = MTMathList(arrow?.lowerLabel)
+    }
+
+    init(leftward: Bool) {
+        super.init(value: leftward ? "\u{2190}" : "\u{2192}", limits: true)
+        self.leftward = leftward
     }
 }
 
